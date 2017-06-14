@@ -156,6 +156,67 @@ void wgsim_mut_diref(const kseq_t *ks, int is_hap, mutseq_t *hap1, mutseq_t *hap
 		}
 	}
 }
+void mp_wgsim_print_ref(const char *name, const kseq_t *ks, mutseq_t *hap1, mutseq_t *hap2)
+{
+  int i;
+  FILE *h1f, *h2f;
+  h1f = fopen("hap1.fa", "w"); h2f = fopen("hap2.fa", "w");
+  fprintf(h1f, ">%s_1st_hap\n", name);
+  fprintf(h2f, ">%s_2nd_hap\n", name);
+  for(i = 0; i != ks->seq.l; ++i) {
+    int c[3];
+    c[0] = nst_nt4_table[(int) ks->seq.s[i]];
+    c[1] = hap1->s[i]; c[2] = hap2->s[i];
+    if(c[0] >= 4) continue;
+    if(c[1] == c[2]) { // hom
+      if ((c[1]&mutmsk) == NOCHANGE || (c[1]&mutmsk) == SUBSTITUTE) {
+        fprintf(h1f, "%c", "ACGTN"[c[1]&0xf]);
+        fprintf(h2f, "%c", "ACGTN"[c[2]&0xf]);
+      } else if (((c[1]&mutmsk) >> 12 ) <= 4) { // ins
+        fprintf(h1f, "%c", "ACGTN"[c[1]&0xf]);
+        fprintf(h2f, "%c", "ACGTN"[c[2]&0xf]);
+        int n = (c[1]&mutmsk) >> 12, ins = c[1] >> 4;
+        while(n > 0) {
+          fprintf(h1f, "%c", "ACGTN"[ins & 0x3]);
+          fprintf(h2f, "%c", "ACGTN"[ins & 0x3]);
+          ins >>= 2;
+          n--;
+        }
+      }
+    } else { // het
+      if ((c[1] & mutmsk) == NOCHANGE || (c[1]&mutmsk) == SUBSTITUTE) {
+        fprintf(h1f, "%c", "ACGTN"[c[1]&0xf]);
+      } else if ((c[1] & mutmsk) == DELETE) {
+        // do nothing
+      } else { // ins1
+        fprintf(h1f, "%c", "ACGTN"[c[1] & 0xf]);
+        int n = (c[1] & mutmsk) >> 12, ins = c[1] >> 4;
+        while (n > 0) {
+          fprintf(h1f, "%c", "ACGTN"[ins & 0x3]);
+          ins >>= 2;
+          n--;
+        }
+      } // else delete character
+      if ((c[2] & mutmsk) == NOCHANGE || (c[2] & mutmsk) == SUBSTITUTE) {
+        fprintf(h2f, "%c", "ACGTN"[c[2] & 0xf]);
+      } else if ((c[2] & mutmsk) == DELETE) {
+        // do nothing
+      } else { // ins2
+        fprintf(h2f, "%c", "ACGTN"[c[2] & 0xf]);
+        int n = (c[2] & mutmsk) >> 12, ins = c[2] >> 4;
+        while (n > 0) {
+          fprintf(h2f, "%c", "ACGTN"[ins & 0x3]);
+          ins >>= 2;
+          n--;
+        }
+      } // else delete character
+    }
+  }
+  fprintf(h1f, "\n");
+  fprintf(h2f, "\n");
+  fclose(h1f);
+  fclose(h2f);
+}
 void wgsim_print_mutref(const char *name, const kseq_t *ks, mutseq_t *hap1, mutseq_t *hap2)
 {
 	int i, j = 0; // j keeps the end of the last deletion
@@ -271,6 +332,7 @@ void wgsim_core(FILE *fpout1, FILE *fpout2, const char *fn, int is_hap, uint64_t
 		// generate mutations and print them out
 		wgsim_mut_diref(ks, is_hap, rseq, rseq+1);
 		wgsim_print_mutref(ks->name.s, ks, rseq, rseq+1);
+    mp_wgsim_print_ref(ks->name.s, ks, rseq, rseq+1);
 
 		for (ii = 0; ii != n_pairs; ++ii) { // the core loop
 			double ran;
@@ -297,7 +359,8 @@ void wgsim_core(FILE *fpout1, FILE *fpout2, const char *fn, int is_hap, uint64_t
 			}
 
 			// generate the read sequences
-			target = rseq[drand48()<0.5?0:1].s; // haplotype from which the reads are generated
+      int haplo_num = drand48()<0.5?0:1;
+			target = rseq[haplo_num].s; // haplotype from which the reads are generated
 			n_sub[0] = n_sub[1] = n_indel[0] = n_indel[1] = n_err[0] = n_err[1] = 0;
 
 #define __gen_read(x, start, iter, dir) do {                            \
@@ -366,9 +429,9 @@ void wgsim_core(FILE *fpout1, FILE *fpout2, const char *fn, int is_hap, uint64_t
 			for (j = 0; j < 2; ++j) {
 				for (i = 0; i < s[j]; ++i) qstr[i] = Q;
 				qstr[i] = 0;
-				fprintf(fpo[j], "@%s_%u_%u_%d:%d:%d_%d:%d:%d_%llx/%d\n", ks->name.s, ext_coor[0]+1, ext_coor[1]+1,
+				fprintf(fpo[j], "@%s_%u_%u_%d:%d:%d_%d:%d:%d_%llx/%d/%d\n", ks->name.s, ext_coor[0]+1, ext_coor[1]+1,
 						n_err[0], n_sub[0], n_indel[0], n_err[1], n_sub[1], n_indel[1],
-						(long long)ii, j==0? is_flip+1 : 2-is_flip);
+                (long long)ii, j==0? is_flip+1 : 2-is_flip, haplo_num);
 				for (i = 0; i < s[j]; ++i)
 					fputc("ACGTN"[(int)tmp_seq[j][i]], fpo[j]);
 				fprintf(fpo[j], "\n+\n%s\n", qstr);
