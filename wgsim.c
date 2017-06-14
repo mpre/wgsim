@@ -1,7 +1,7 @@
 /* The MIT License
 
    Copyright (c) 2008 Genome Research Ltd (GRL).
-                 2011 Heng Li <lh3@live.co.uk>
+   2011 Heng Li <lh3@live.co.uk>
 
    Permission is hereby granted, free of charge, to any person obtaining
    a copy of this software and associated documentation files (the
@@ -114,13 +114,13 @@ void wgsim_mut_diref(const kseq_t *ks, int is_hap, mutseq_t *hap1, mutseq_t *hap
 	for (i = 0; i != ks->seq.l; ++i) {
 		int c;
 		c = ret[0]->s[i] = ret[1]->s[i] = (mut_t)nst_nt4_table[(int)ks->seq.s[i]];
-        if (deleting) {
-            if (drand48() < INDEL_EXTEND) {
-                if (deleting & 1) ret[0]->s[i] |= DELETE;
-                if (deleting & 2) ret[1]->s[i] |= DELETE;
-                continue;
-            } else deleting = 0;
-        }
+    if (deleting) {
+      if (drand48() < INDEL_EXTEND) {
+        if (deleting & 1) ret[0]->s[i] |= DELETE;
+        if (deleting & 2) ret[1]->s[i] |= DELETE;
+        continue;
+      } else deleting = 0;
+    }
 		if (c < 4 && drand48() < MUT_RATE) { // mutation
 			if (drand48() >= INDEL_FRAC) { // substitution
 				double r = drand48();
@@ -134,17 +134,17 @@ void wgsim_mut_diref(const kseq_t *ks, int is_hap, mutseq_t *hap1, mutseq_t *hap
 				if (drand48() < 0.5) { // deletion
 					if (is_hap || drand48() < 0.333333) { // hom-del
 						ret[0]->s[i] = ret[1]->s[i] = DELETE;
-                        deleting = 3;
+            deleting = 3;
 					} else { // het-del
-                        deleting = drand48()<0.5?1:2;
+            deleting = drand48()<0.5?1:2;
 						ret[deleting-1]->s[i] = DELETE;
 					}
 				} else { // insertion
-                    int num_ins = 0, ins = 0;
-                    do {
-                        num_ins++;
-                        ins = (ins << 2) | (int)(drand48() * 4.0);
-                    } while (num_ins < 4 && drand48() < INDEL_EXTEND);
+          int num_ins = 0, ins = 0;
+          do {
+            num_ins++;
+            ins = (ins << 2) | (int)(drand48() * 4.0);
+          } while (num_ins < 4 && drand48() < INDEL_EXTEND);
 
 					if (is_hap || drand48() < 0.333333) { // hom-ins
 						ret[0]->s[i] = ret[1]->s[i] = (num_ins << 12) | (ins << 4) | c;
@@ -238,13 +238,13 @@ void wgsim_print_mutref(const char *name, const kseq_t *ks, mutseq_t *hap1, muts
 					}
 				} else if (((c[1] & mutmsk) >> 12) <= 4) { // ins
 					printf("%s\t%d\t-\t", name, i+1);
-                    int n = (c[1]&mutmsk) >> 12, ins = c[1] >> 4;
-                    while (n > 0) {
-                        putchar("ACGTN"[ins & 0x3]);
+          int n = (c[1]&mutmsk) >> 12, ins = c[1] >> 4;
+          while (n > 0) {
+            putchar("ACGTN"[ins & 0x3]);
 						ins >>= 2;
-                        n--;
-                    }
-                    printf("\t-\n");
+            n--;
+          }
+          printf("\t-\n");
 				} // else: deleted base in a long deletion
 			} else { // het
 				if ((c[1]&mutmsk) == SUBSTITUTE || (c[2]&mutmsk) == SUBSTITUTE) { // substitution
@@ -265,22 +265,22 @@ void wgsim_print_mutref(const char *name, const kseq_t *ks, mutseq_t *hap1, muts
 					}
 				} else if (((c[1] & mutmsk) >> 12) <= 4 && ((c[1] & mutmsk) >> 12) > 0) { // ins1
 					printf("%s\t%d\t-\t", name, i+1);
-                    int n = (c[1]&mutmsk) >> 12, ins = c[1] >> 4;
-                    while (n > 0) {
-                        putchar("ACGTN"[ins & 0x3]);
+          int n = (c[1]&mutmsk) >> 12, ins = c[1] >> 4;
+          while (n > 0) {
+            putchar("ACGTN"[ins & 0x3]);
 						ins >>= 2;
-                        n--;
-                    }
-                    printf("\t+\n");
+            n--;
+          }
+          printf("\t+\n");
 				} else if (((c[2] & mutmsk) >> 12) <= 4 || ((c[2] & mutmsk) >> 12) > 0) { // ins2
 					printf("%s\t%d\t-\t", name, i+1);
-                    int n = (c[2]&mutmsk) >> 12, ins = c[2] >> 4;
-                    while (n > 0) {
-                        putchar("ACGTN"[ins & 0x3]);
-                        ins >>= 2;
-                        n--;
-                    }
-                    printf("\t+\n");
+          int n = (c[2]&mutmsk) >> 12, ins = c[2] >> 4;
+          while (n > 0) {
+            putchar("ACGTN"[ins & 0x3]);
+            ins >>= 2;
+            n--;
+          }
+          printf("\t+\n");
 				} // else: deleted base in a long deletion
 			}
 		}
@@ -290,14 +290,14 @@ void wgsim_print_mutref(const char *name, const kseq_t *ks, mutseq_t *hap1, muts
 void wgsim_core(FILE *fpout1, FILE *fpout2, const char *fn, int is_hap, uint64_t N, int dist, int std_dev, int size_l, int size_r)
 {
 	kseq_t *ks;
-    mutseq_t rseq[2];
+  mutseq_t rseq[2];
 	gzFile fp_fa;
 	uint64_t tot_len, ii;
 	int i, l, n_ref;
 	char *qstr;
 	int size[2], Q, max_size;
 	uint8_t *tmp_seq[2];
-    mut_t *target;
+  mut_t *target;
 
 	l = size_l > size_r? size_l : size_r;
 	qstr = (char*)calloc(l+1, 1);
@@ -417,8 +417,8 @@ void wgsim_core(FILE *fpout1, FILE *fpout2, const char *fn, int is_hap, uint64_t
 						++n_err[j];
 					}
 					tmp_seq[j][i] = c;
-				}
-				if ((double)n_n / s[j] > MAX_N_RATIO) break;
+				}	
+        if ((double)n_n / s[j] > MAX_N_RATIO) break;
 			}
 			if (j < 2) { // too many ambiguous bases on one of the reads
 				--ii;
@@ -430,7 +430,7 @@ void wgsim_core(FILE *fpout1, FILE *fpout2, const char *fn, int is_hap, uint64_t
 				for (i = 0; i < s[j]; ++i) qstr[i] = Q;
 				qstr[i] = 0;
 				fprintf(fpo[j], "@%s_%u_%u_%d:%d:%d_%d:%d:%d_%llx/%d/%d\n", ks->name.s, ext_coor[0]+1, ext_coor[1]+1,
-						n_err[0], n_sub[0], n_indel[0], n_err[1], n_sub[1], n_indel[1],
+                n_err[0], n_sub[0], n_indel[0], n_err[1], n_sub[1], n_indel[1],
                 (long long)ii, j==0? is_flip+1 : 2-is_flip, haplo_num);
 				for (i = 0; i < s[j]; ++i)
 					fputc("ACGTN"[(int)tmp_seq[j][i]], fpo[j]);
