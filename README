@@ -1,3 +1,7 @@
+Differences with wgsim
+============
+This version of wgsim outputs the two haplotypes from which the reads are generated and (hopefully) fixes the generation of reads on the reverse strand.
+
 Introduction
 ============
 
